@@ -1,0 +1,6 @@
+import os
+Import('env')
+
+dst_dir = '#' + env['BUILD'] + '/bin/'
+
+#env.Program(dst_dir + 'app', 'app.cc', LIBS=env.get('LIBS', []) + ['proj'])

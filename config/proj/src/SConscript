@@ -1,0 +1,20 @@
+import os
+Import('env')
+
+# Pick out the files we will be building.
+hdrs = env.Glob('*.h')
+srcs = env.Glob('*.c')
+
+# Initialise an object map. This will map from the source file name to the objects they
+# produce.
+obj_map = {}
+
+# Install headers.
+env.Install('#' + env['BUILD']  + '/include/' + env['PROJ'], hdrs)
+if env['PREFIX']:
+    env.Install(env['PREFIX'] + '/include/' + env['PROJ'], hdrs)
+
+# Build source files.
+obj_map.update(dict(zip([os.path.basename(s.path) for s in srcs], env.SharedObject(srcs))))
+
+Return('obj_map')
