@@ -9,7 +9,9 @@ class MPI(Package):
         self.mpi_compilers = ['mpicc', 'mpic++', 'mpicxx',
                               'mpif77', 'mpif90', 'mpif']
         self.libs=[
-            ['mpich'], ['pmpich', 'mpich']
+            ['mpich'],
+            ['pmpich', 'mpich'],
+            ['mpich', 'mpl'],
         ]
         self.extra_libs=[
             [],
@@ -32,7 +34,6 @@ int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
-        self.options = ['CC']
 
     def check(self, ctx):
         env = ctx.env

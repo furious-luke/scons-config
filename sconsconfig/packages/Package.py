@@ -1,5 +1,5 @@
 import os, sys, copy
-from config.utils import conv
+from sconsconfig.utils import conv
 
 
 def env_backup(env, names):
