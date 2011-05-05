@@ -12,6 +12,7 @@ class MPI(Package):
             ['mpich'],
             ['pmpich', 'mpich'],
             ['mpich', 'mpl'],
+            ['mpi'],
         ]
         self.extra_libs=[
             [],

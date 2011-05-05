@@ -70,7 +70,7 @@ class Package(object):
                 print '\n'
                 print 'Unable to find a valid %s installation at:'%name
                 print '  %s\n'%self.get_option(env, upp + '_DIR')
-                env.Exit()
+                env.Exit(1)
 
         elif self.have_any_options(env, upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS'):
             inc_dirs = self.get_option(env, upp + '_INC_DIR').split(';')
@@ -93,7 +93,7 @@ class Package(object):
                 if self.have_option(env, upp + '_LIBS'):
                     print '  Libraries: %s'%repr([l.path for l in cur_libs])
                 print
-                env.Exit()
+                env.Exit(1)
 
         else:
             common_dirs = ['/usr/local', os.environ['HOME'], os.path.join(os.environ['HOME'], 'soft'),
@@ -127,7 +127,7 @@ class Package(object):
             print 'Unable to locate required package %s. You can specify'%name
             print 'the location using %s_DIR or a combination of'%upp
             print '%s_INC_DIR, %s_LIB_DIR and %s_LIBS.\n'%(upp, upp, upp)
-            sys.exit()
+            sys.exit(1)
 
     def add_options(self, vars):
         name = self.name
@@ -251,4 +251,4 @@ class Package(object):
             print '\n'
             print 'Please pecify either %s_DIR or either of %s_INC_DIR or'%(name, name)
             print '%s_LIB_DIR.\n'%name
-            env.Exit()
+            env.Exit(1)
