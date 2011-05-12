@@ -57,6 +57,7 @@ class Package(object):
         self.ext = '.c'
 
     def check(self, ctx, **kwargs):
+        ctx.Log('Beginning check for %s\n'%self.name)
         env = ctx.env
         name = self.name
         libs = self.get_libs()
@@ -65,11 +66,13 @@ class Package(object):
 
         upp = name.upper()
         if self.have_option(env, upp + '_DIR'):
+            value = self.get_option(env, upp + '_DIR')
+            ctx.Log('Found option %s = %s\n'%(upp + '_DIR', value))
             res = self.try_location(ctx, self.get_option(env, upp + '_DIR'), **kwargs)
             if not res[0]:
-                print '\n'
-                print 'Unable to find a valid %s installation at:'%name
-                print '  %s\n'%self.get_option(env, upp + '_DIR')
+                msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
+                ctx.Log(msg)
+                print msg
                 env.Exit(1)
 
         elif self.have_any_options(env, upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS'):
@@ -81,41 +84,55 @@ class Package(object):
             else:
                 cur_libs = libs
                 cur_extra_libs = extra_libs
+            ctx.Log('Found options:\n')
+            if inc_dirs:
+                ctx.Log('  %s = %s\n'%(upp + '_INC_DIR', str(inc_dirs)))
+            if lib_dirs:
+                ctx.Log('  %s = %s\n'%(upp + '_LIB_DIR', str(lib_dirs)))
+            if cur_libs:
+                ctx.Log('  %s = %s\n'%(upp + '_LIBS', str([l.path for l in cur_libs])))
 
             res = self.try_location(ctx, '', **kwargs)
             if not res[0]:
-                print '\n'
-                print 'Unable to find a valid %s installation using:'%name
+                msg = '\n\nUnable to find a valid %s installation using:\n'%name
                 if self.have_option(env, upp + '_INC_DIR'):
-                    print '  Header directories: %s'%repr(inc_dirs)
+                    msg += '  Header directories: %s\n'%str(inc_dirs)
                 if self.have_option(env, upp + '_LIB_DIR'):
-                    print '  Library directories: %s'%repr(lib_dirs)
+                    msg += '  Library directories: %s\n'%str(lib_dirs)
                 if self.have_option(env, upp + '_LIBS'):
-                    print '  Libraries: %s'%repr([l.path for l in cur_libs])
-                print
+                    msg += '  Libraries: %s\n'%str([l.path for l in cur_libs])
+                ctx.Log(msg)
+                print msg
                 env.Exit(1)
 
         else:
-            common_dirs = ['/usr/local', os.environ['HOME'], os.path.join(os.environ['HOME'], 'soft'),
-                       '/sw']
-            res = (0, '')
-            for cd in common_dirs:
-                if not os.path.exists(cd):
-                    continue
-                for d in os.listdir(cd):
-                    if d.find(name) == -1 and d.find(name.lower()) == -1 and d.find(name.upper()) == -1:
+            ctx.Log('No options found, trying empty location.\n')
+            res = self.try_libs(ctx, libs, extra_libs, **kwargs)
+
+            if not res[0]:
+                ctx.Log('Trying common locations.\n')
+                common_dirs = ['/usr/local', os.environ['HOME'], os.path.join(os.environ['HOME'], 'soft'), '/sw']
+                res = (0, '')
+                for cd in common_dirs:
+                    if not os.path.exists(cd):
+                        ctx.Log('%s does not exist.\n'%cd)
                         continue
-                    d = os.path.join(cd, d)
-                    if not os.path.isdir(d):
-                        continue
-                    res = self.try_location(ctx, d, **kwargs)
+                    ctx.Log('Looking in %s\n'%cd)
+                    for d in os.listdir(cd):
+                        if d.find(name) == -1 and d.find(name.lower()) == -1 and d.find(name.upper()) == -1:
+                            continue
+                        d = os.path.join(cd, d)
+                        if not os.path.isdir(d):
+                            ctx.Log('%s is not a directory.\n')
+                            continue
+                        res = self.try_location(ctx, d, **kwargs)
+                        if res[0]:
+                            break
                     if res[0]:
                         break
-                if res[0]:
-                    break
 
-            if res[0]:
-                env[upp + '_DIR'] = d
+                if res[0]:
+                    env[upp + '_DIR'] = d
 
         return res
 
@@ -173,6 +190,7 @@ class Package(object):
         return res
 
     def try_location(self, ctx, base, **kwargs):
+        ctx.Log('Checking for %s in %s.'%(self.name, base))
         loc_callback = kwargs.get('loc_callback', None)
         libs = copy.deepcopy(conv.to_iter(self.get_libs()))
         extra_libs = copy.deepcopy(conv.to_iter(self.get_extra_libs()))
