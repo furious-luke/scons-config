@@ -1,5 +1,18 @@
 import os
-from config import packages, tools
+import sconsconfig as config
+from sconsconfig import packages, tools
+
+# Set the project name.
+proj_name = 'example'
+
+#
+# Select the packages we want to use in the configuration.
+#
+
+config.select(
+    packages.MPI(required=True),
+    packages.GSL(required=True),
+)
 
 #
 # Setup the variables available for this build.
@@ -14,21 +27,15 @@ vars.AddVariables(
     BoolVariable('WITH_TAU', 'Enable tau profiling.', False),
     BoolVariable('WITH_GCOV', 'Enable coverage testing with gcov.', False),
     PathVariable('PREFIX', 'Set install location.', '/usr/local', PathVariable.PathIsDirCreate),
-    BoolVariable('BUILD_LLVM', 'Build LLVM bit-code alongside binaries.', False),
     BoolVariable('BUILD_STATIC_LIBS', 'Build static libraries.', True),
     BoolVariable('BUILD_SHARED_LIBS', 'Build shared libraries.', True),
     BoolVariable('BUILD_TESTS', 'Build unit tests.', True),
-    BoolVariable('BUILD_UTBOT_TESTS', 'Build UTBot unit-tests.', True),
-    BoolVariable('BUILD_PCU_TESTS', 'Build PCU unit-tests.', False),
     BoolVariable('BUILD_APPS', 'Build applications.', True),
-    BoolVariable('BUILD_EXS', 'Build examples.', True),
-    BoolVariable('BUILD_DOC', 'Build documentation.', False)
-    )
+    BoolVariable('BUILD_DOC', 'Build documentation.', False),
+)
+
 # Add options from any packages we want to use.
-packages.MPI.AddOptions(vars)
-packages.HDF5.AddOptions(vars)
-packages.ParMETIS.AddOptions(vars)
-packages.UTBot.AddOptions(vars)
+config.add_options(vars)
 
 #
 # Create the construction environment we will use.
@@ -36,24 +43,24 @@ packages.UTBot.AddOptions(vars)
 
 # Build a list of tools we want included.
 tools = ['default']
+
 # Create the environment.
 env = Environment(tools=tools, toolpath=['config/tools'], variables=vars, ENV=os.environ)
-# Add conditional custom tools.
-if env['BUILD_LLVM']:
-    env.Tool('llvm')
-if env['BUILD_UTBOT_TESTS']:
-    env.Tool('utbot')
-if env['BUILD_PCU_TESTS']:
-    env.Tool('pcutest')
+
+# Add any custom tools here.
+
 # Check if there were any unkown variables on the command line.
 unknown = vars.UnknownVariables()
 if unknown:
     print 'Unknown variables:', unknown.keys()
     env.Exit(1)
+
 # Take a snapshot of provided options before we continue.
 vars.Save('config.py', env)
+
 # Generate a help line later use.
 Help(vars.GenerateHelpText(env))
+
 # If the user requested help don't bother continuing with the build.
 if not GetOption('help'):
 
@@ -61,24 +68,16 @@ if not GetOption('help'):
     # Perform configuration of the project.
     #
 
-    # Build a set of custom tests we will use.
-    custom_tests = {}
-    custom_tests['CheckMPI'] = packages.MPI.CheckMPI
-    custom_tests['CheckHDF5'] = packages.HDF5.CheckHDF5
-    custom_tests['CheckParMETIS'] = packages.ParMETIS.CheckParMETIS
-    if env['BUILD_UTBOT_TESTS']:
-        custom_tests['CheckUTBot'] = packages.UTBot.CheckUTBot
     # Create our configuration environment, passing the set of custom tests.
-    sconf = env.Configure(custom_tests=custom_tests)
+    sconf = env.Configure(custom_tests=config.custom_tests)
+
     # Run our custom tests with any options needed.
-    sconf.CheckMPI(required=True)
-    sconf.CheckHDF5(required=True)
-    sconf.CheckParMETIS(required=True)
-    if env['BUILD_UTBOT_TESTS']:
-        sconf.CheckUTBot(required=True)
+    config.check(sconf)
+
     # Finish the configuration and save it to file.
     sconf.Finish()
     vars.Save('config.py', env)
+
     # Modify the environment based on any of our variables.
     if env['BUILD'] == 'debug':
         env.MergeFlags('-g -O0')
@@ -96,10 +95,14 @@ if not GetOption('help'):
         env['CXX'] = 'tau_cxx.sh'
         env.AppendUnique(CPPDEFINES=['WITH_TAU'])
         env.AppendUnique(CPPDEFINES=['NDEBUG'])
+
     # Make sure our source code can locate installed headers and
     # libraries.
     env['BUILD'] = 'build-' + env['BUILD']
-    env.PrependUnique(CPPPATH=['#' + env['BUILD'] + '/include'])
+    env.PrependUnique(CPPPATH=[
+        '#' + env['BUILD'] + '/include',
+        '#' + env['BUILD'] + '/include/' + proj_name,
+    ])
     env.PrependUnique(LIBPATH=['#' + env['BUILD'] + '/lib'])
 
     #
@@ -108,18 +111,10 @@ if not GetOption('help'):
 
     # Call sub scripts.
     Export('env')
-    if env['BUILD_PCU_TESTS']:
-        SConscript('pcu/SConscript', build_dir=env['BUILD'] + '/pcu', duplicate=0)
-    SConscript('debug/SConscript', build_dir=env['BUILD'] + '/debug', duplicate=0)
-    SConscript('logging/SConscript', build_dir=env['BUILD'] + '/logging', duplicate=0)
-    SConscript('containers/SConscript', build_dir=env['BUILD'] + '/containers', duplicate=0)
-    SConscript('parallel/SConscript', build_dir=env['BUILD'] + '/parallel', duplicate=0)
-    SConscript('genetic/SConscript', build_dir=env['BUILD'] + '/genetic', duplicate=0)
+    SConscript(proj_name + '/SConscript', variant_dir=env['BUILD'] + '/debug', duplicate=0)
 
     #
     # Alias any special targets.
     #
 
     env.Alias('install', env['PREFIX'])
-    if env['BUILD_UTBOT_TESTS']:
-        env.Alias('check', None, env.Action('@utbot run'))
