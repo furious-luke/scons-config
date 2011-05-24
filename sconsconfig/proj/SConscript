@@ -22,6 +22,10 @@ if env['BUILD_SHARED_LIBS'] and env['PREFIX']:
 if env['BUILD_TESTS']:
     SConscript('tests/SConscript', duplicate=0, exports=['obj_map'])
 
+# Call the 'apps' SConscript, if required.
+if env['BUILD_APPS']:
+    SConscript('apps/SConscript', duplicate=0, exports=['obj_map'])
+
 # Build documentation.
 if env['BUILD_DOC']:
     SConscript('doc/SConscript', duplicate=0)
