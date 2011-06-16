@@ -111,7 +111,7 @@ if not GetOption('help'):
 
     # Call sub scripts.
     Export('env')
-    SConscript(proj_name + '/SConscript', variant_dir=env['BUILD'] + '/debug', duplicate=0)
+    SConscript(proj_name + '/SConscript', variant_dir=env['BUILD'] + '/' + proj_name, duplicate=0)
 
     #
     # Alias any special targets.
