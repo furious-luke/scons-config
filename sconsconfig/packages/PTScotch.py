@@ -6,7 +6,8 @@ class PTScotch(Package):
     def __init__(self, **kwargs):
         super(PTScotch, self).__init__(**kwargs)
         self.libs=[['ptscotch', 'ptscotcherr', 'ptscotcherrexit', 'scotch', 'scotcherr', 'scotcherrexit']]
-        self.extra_libs=[['z', 'm', 'rt']]
+        self.extra_libs=[['z', 'm'],
+                         ['z', 'm', 'rt']]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
