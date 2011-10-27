@@ -1,17 +1,17 @@
 import sys, os
 from Package import Package
 
-class ParMETIS(Package):
+class PTScotch(Package):
 
     def __init__(self, **kwargs):
-        super(ParMETIS, self).__init__(**kwargs)
-        self.libs=[['parmetis']]
+        super(PTScotch, self).__init__(**kwargs)
+        self.libs=[['ptscotch', 'ptscotcherr', 'ptscotcherrexit', 'scotch', 'scotcherr', 'scotcherrexit']]
         self.extra_libs=[['z', 'm', 'rt']]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
-#include <parmetis.h>
+#include <ptscotch.h>
 int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
@@ -19,10 +19,10 @@ int main(int argc, char* argv[]) {
 
     def check(self, ctx):
         env = ctx.env
-        ctx.Message('Checking for ParMETIS ... ')
+        ctx.Message('Checking for PTScotch ... ')
         self.check_options(env)
 
-        res = super(ParMETIS, self).check(ctx)
+        res = super(PTScotch, self).check(ctx)
 
         self.check_required(res[0], ctx)
         ctx.Result(res[0])

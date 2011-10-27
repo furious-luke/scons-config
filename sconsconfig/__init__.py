@@ -1,4 +1,5 @@
 from utils import conv
+import packages
 
 enabled_packages = []
 custom_tests = {}
@@ -19,3 +20,8 @@ def check(sconf):
     for pkg in enabled_packages:
         for name in conv.to_iter(pkg.test_names):
             getattr(sconf, name)()
+
+def configure(env):
+    sconf = env.Configure(custom_tests=custom_tests)
+    check(sconf)
+    sconf.Finish()

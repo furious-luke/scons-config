@@ -1,28 +1,27 @@
 import sys, os
 from Package import Package
 
-class ParMETIS(Package):
+class boost(Package):
 
     def __init__(self, **kwargs):
-        super(ParMETIS, self).__init__(**kwargs)
-        self.libs=[['parmetis']]
-        self.extra_libs=[['z', 'm', 'rt']]
+        super(boost, self).__init__(**kwargs)
+        self.sub_dirs = [('', ''), ('include', '')]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
-#include <mpi.h>
-#include <parmetis.h>
+#include <boost/optional.hpp>
 int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
+        self.ext = '.cc'
 
     def check(self, ctx):
         env = ctx.env
-        ctx.Message('Checking for ParMETIS ... ')
+        ctx.Message('Checking for boost ... ')
         self.check_options(env)
 
-        res = super(ParMETIS, self).check(ctx)
+        res = super(boost, self).check(ctx)
 
         self.check_required(res[0], ctx)
         ctx.Result(res[0])

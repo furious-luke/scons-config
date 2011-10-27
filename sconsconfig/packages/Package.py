@@ -136,7 +136,7 @@ class Package(object):
 
         return res
 
-    def check_required(self, result):
+    def check_required(self, result, ctx=None):
         name = self.name
         upp = name.upper()
         if not result and self.required:
@@ -145,6 +145,12 @@ class Package(object):
             print 'the location using %s_DIR or a combination of'%upp
             print '%s_INC_DIR, %s_LIB_DIR and %s_LIBS.\n'%(upp, upp, upp)
             sys.exit(1)
+
+        # If the package is not required but was found anyway, add a preprocessor
+        # flag indicating such.
+        else:
+            if ctx and not self.required:
+                ctx.env.AppendUnique(CPPDEFINES=['HAVE_' + upp])
 
     def add_options(self, vars):
         name = self.name

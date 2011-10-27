@@ -1,17 +1,17 @@
 import sys, os
 from Package import Package
 
-class ParMETIS(Package):
+
+class FFTW(Package):
 
     def __init__(self, **kwargs):
-        super(ParMETIS, self).__init__(**kwargs)
-        self.libs=[['parmetis']]
-        self.extra_libs=[['z', 'm', 'rt']]
+        super(FFTW, self).__init__(**kwargs)
+        self.libs=[['srfftw_mpi', 'sfftw_mpi', 'srfftw', 'sfftw']]
+        self.extra_libs=[]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
-#include <mpi.h>
-#include <parmetis.h>
+#include <srfftw_mpi.h>
 int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
@@ -19,11 +19,11 @@ int main(int argc, char* argv[]) {
 
     def check(self, ctx):
         env = ctx.env
-        ctx.Message('Checking for ParMETIS ... ')
+        ctx.Message('Checking for FFTW ... ')
         self.check_options(env)
 
-        res = super(ParMETIS, self).check(ctx)
+        res = super(FFTW, self).check(ctx)
 
-        self.check_required(res[0], ctx)
+        self.check_required(res[0])
         ctx.Result(res[0])
         return res[0]
