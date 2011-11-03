@@ -6,11 +6,32 @@ class HDF5(Package):
 
     def __init__(self, **kwargs):
         super(HDF5, self).__init__(**kwargs)
-        self.libs=['hdf5']
+        self.parallel = kwargs.get('parallel', True)
+        self.libs=[['hdf5']]
+        if self.parallel:
+            # Sometimes we see a problem with MPICH2 where the MPL library is included by libhdf5.so too
+            # soon in the link command, causing issues with libmpich.so.
+            self.libs.append(['mpl', 'mpich', 'hdf5'])
         self.extra_libs=[
             [], ['z'], ['m'], ['z', 'm'],
         ]
-        self.check_text = r'''
+        if self.parallel:
+            self.check_text = r'''
+#include <stdlib.h>
+#include <stdio.h>
+#include <hdf5.h>
+#include <mpi.h>
+int main(int argc, char* argv[]) {
+   hid_t plist_id, file_id;
+   int rank;
+   MPI_Init(&argc, &argv);
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   MPI_Finalize();
+   return EXIT_SUCCESS;
+}
+'''
+        else:
+            self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
 #include <hdf5.h>
