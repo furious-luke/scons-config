@@ -5,6 +5,7 @@ from Package import Package
 class MPI(Package):
 
     def __init__(self, **kwargs):
+        self.download_url = 'http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.4.1p1/mpich2-1.4.1p1.tar.gz'
         super(MPI, self).__init__(**kwargs)
         self.mpi_compilers = ['mpicc', 'mpic++', 'mpicxx',
                               'mpif77', 'mpif90', 'mpif']
@@ -12,6 +13,7 @@ class MPI(Package):
             ['mpich'],
             ['pmpich', 'mpich'],
             ['mpich', 'mpl'],
+            ['pmpich', 'mpich', 'mpl'],
             ['mpi'],
         ]
         self.extra_libs=[
@@ -28,13 +30,25 @@ class MPI(Package):
 #include <stdio.h>
 #include <mpi.h>
 int main(int argc, char* argv[]) {
+   int rank;
    MPI_Init(&argc, &argv);
    printf("%d\n", MPI_VERSION);
    printf("%d\n", MPI_SUBVERSION);
+
+   /* This will catch OpenMPI libraries. */
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
    MPI_Finalize();
    return EXIT_SUCCESS;
 }
 '''
+
+        # Setup the build handler. I'm going to assume this will work for all architectures.
+        self.set_build_handler([
+            './configure --prefix=${PREFIX} --enable-shared --disable-fc --disable-f77',
+            'make',
+            'make install'
+        ])
 
     def check(self, ctx):
         env = ctx.env

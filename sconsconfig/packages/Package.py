@@ -1,11 +1,12 @@
 import os, sys, copy
 from sconsconfig.utils import conv
+from SCons.Variables import BoolVariable
 
-
+## Backup a list of environment variables.
+#  @param[in] env An SCons environment.
+#  @param[in] names A list of environment names to backup.
+#  @returns A dictionary of backed up names and values.
 def env_backup(env, names):
-    '''
-    Backup a set of environment macros.
-    '''
     names = conv.to_iter(names)
     bkp = {}
     for n in names:
@@ -15,21 +16,22 @@ def env_backup(env, names):
             bkp[n] = env[n]
     return bkp
 
-
+## Backup the existing environment and update with provided keywords.
+#  @see env_backup
+#  @param[in] env An SCons environment.
+#  @returns A dictionary of backed up names and values.
 def env_setup(env, **kw):
-    '''
-    Backup the existing environment and update with provided
-    keywords.
-    '''
     bkp = env_backup(env, kw.keys())
     env.Replace(**kw)
     return bkp
 
-
+## Restore a set of previously backed up environment macros.
+#  @see env_backup
+#  @param[in] env An SCons environment.
+#  @param[in] bkp A dictionary of backed up key/values returned by env_backup.
 def env_restore(env, bkp):
     '''
-    Restore a set of environment macros previously
-    backed up with env_backup.
+    
     '''
     for n, v in bkp.iteritems():
         if v is None:
@@ -37,12 +39,17 @@ def env_restore(env, bkp):
         else:
             env[n] = v
 
-
+## Base class for all configuration packages.
 class Package(object):
 
+    ## Default include/library sub-directories to search.
     DEFAULT_SUB_DIRS = [('include', 'lib'), ('include', 'lib64')]
 
-    def __init__(self, required=True):
+    ##
+    #  @param[in] required Boolean indicating whether the configuration should fail if this package
+    #                      cannot be found.
+    #  @param[in] download_url Location to download the package if required.
+    def __init__(self, required=True, download_url=''):
         self.name = self.__class__.__name__
         self.required = required
         self.libs = []
@@ -55,14 +62,18 @@ class Package(object):
         self.auto_add_libs=True
         self.run=True
         self.ext = '.c'
+        self.download_url = download_url
+        self.build_handlers = {}
 
+    ## Run the configuration checks for this package.
+    #  @param[in,out] ctx The configuration context, retrieved from SCons.
     def check(self, ctx, **kwargs):
         ctx.Log('Beginning check for %s\n'%self.name)
         env = ctx.env
         name = self.name
-        libs = self.get_libs()
-        extra_libs = self.get_extra_libs()
-        sub_dirs = self.get_sub_dirs()
+        libs = self.libs
+        extra_libs = self.extra_libs
+        sub_dirs = self.sub_dirs
 
         upp = name.upper()
         if self.have_option(env, upp + '_DIR'):
@@ -105,6 +116,17 @@ class Package(object):
                 print msg
                 env.Exit(1)
 
+        # Check if the user requested to download this package.
+        elif self.have_option(env, upp + '_DOWNLOAD'):
+            res = self.auto(ctx)
+            if res[0]:
+                res = self.try_location(ctx, self.get_option(env, upp + '_DIR'), **kwargs)
+                if not res[0]:
+                    msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
+                    ctx.Log(msg)
+                    print msg
+                    env.Exit(1)
+
         else:
             ctx.Log('No options found, trying empty location.\n')
             res = self.try_libs(ctx, libs, extra_libs, **kwargs)
@@ -143,7 +165,9 @@ class Package(object):
             print '\n'
             print 'Unable to locate required package %s. You can specify'%name
             print 'the location using %s_DIR or a combination of'%upp
-            print '%s_INC_DIR, %s_LIB_DIR and %s_LIBS.\n'%(upp, upp, upp)
+            print '%s_INC_DIR, %s_LIB_DIR and %s_LIBS.'%(upp, upp, upp)
+            print 'You can also specify %s_DOWNLOAD to'%upp
+            print 'automatically download and install the package.\n'
             sys.exit(1)
 
         # If the package is not required but was found anyway, add a preprocessor
@@ -159,10 +183,147 @@ class Package(object):
         vars.Add(upp + '_INC_DIR', help='Location of %s header files.'%name)
         vars.Add(upp + '_LIB_DIR', help='Location of %s libraries.'%name)
         vars.Add(upp + '_LIBS', help='%s libraries.'%name)
-        self.options.extend([upp + '_DIR', upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS'])
+        if self.download_url:
+            vars.Add(BoolVariable(upp + '_DOWNLOAD', help='Download and use a local copy of %s.'%name, default=False))
+        self.options.extend([upp + '_DIR', upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS', upp + '_DOWNLOAD'])
+
+    ## Set the build handler for an architecture and operating system. Pass in None to the handler
+    #  to clear the current handler.
+    #  @param[in] handler The handler string to use.
+    #  @param[in] sys_id The kind of system to set for.
+    def set_build_handler(self, handler, sys_id=None):
+        if handler is None and sys_id in self.build_handlers:
+            del self.build_handlers[sys_id]
+        else:
+            self.build_handlers[sys_id] = handler
+
+    def get_build_handler(self):
+        import platform
+        os = platform.system()
+        arch = platform.architecture()[0]
+        sys_id = os + '_' + arch
+        if sys_id in self.build_handlers:
+            return self.build_handlers[sys_id]
+        if os in self.build_handlers:
+            return self.build_handlers[os]
+        if arch in self.build_handlers:
+            return self.build_handlers[arch]
+        return self.build_handlers.get(None, None)
+
+    def auto(self, ctx):
+        sys.stdout.write('\n')
+
+        # Create the source directory if it does not already exist.
+        src_dir = os.path.join('external_packages', 'src')
+        if not os.path.exists(src_dir):
+            os.makedirs(src_dir)
+
+        # Setup the filename and build directory name and distination directory.
+        filename = self.download_url[self.download_url.rfind('/') + 1:]
+        build_dir = self.name.lower()
+        dst_dir = os.path.abspath(os.path.join('external_packages', self.name.lower()))
+
+        # Change to the source directory.
+        old_dir = os.getcwd()
+        os.chdir(src_dir)
+
+        # Download if the file is not already available.
+        if not os.path.exists(filename):
+            if not self.auto_download(ctx, filename):
+                os.chdir(old_dir)
+                return (0, '')
+
+        # Unpack if there is not already a build directory by the same name.
+        if not os.path.exists(build_dir):
+            if not self.auto_unpack(ctx, filename, build_dir):
+                os.chdir(old_dir)
+                return (0, '')
+
+        # Move into the build directory. Most archives will place themselves
+        # in a single directory which we should then move into.
+        os.chdir(build_dir)
+        entries = os.listdir('.')
+        if len(entries) == 1:
+            os.chdir(entries[0])
+
+        # Build the package.
+        if not os.path.exists('scons_build_success'):
+            if not self.auto_build(ctx, dst_dir):
+                os.chdir(old_dir)
+                return (0, '')
+
+        sys.stdout.write('  Configuring with downloaded package ... ')
+        os.chdir(old_dir)
+        return (1, '')
+
+    def auto_download(self, ctx, filename):
+        sys.stdout.write('  Downloading ... ')
+        sys.stdout.flush()
+        try:
+            import urllib
+            urllib.urlretrieve(self.download_url, filename)
+            sys.stdout.write('done.\n')
+            return True
+        except:
+            sys.stdout.write('failed.\n')
+            return False
+
+    def auto_unpack(self, ctx, filename, build_dir):
+        sys.stdout.write('  Extracting ... ')
+        sys.stdout.flush()
+        try:
+            import tarfile
+            tf = tarfile.open(filename)
+            tf.extractall(build_dir)
+            sys.stdout.write('done.\n')
+            return True
+        except:
+            sys.stdout.write('failed.\n')
+            return False
+
+    def auto_build(self, ctx, dst_dir):
+        sys.stdout.write('  Building package, this could take a while ... ')
+        sys.stdout.flush()
+
+        # Remove any existing file used to indicate successful builds.
+        import os
+        if os.path.exists('scons_build_success'):
+            os.remove('scons_build_success')
+
+        # Hunt down the correct build handler.
+        handler = self.get_build_handler()
+        if handler is None:
+            sys.stdout.write('failed.\n  Sorry, this system/architecture is not supported.\n')
+            return False
+
+        # Make a file to log stdout from the commands.
+        stdout_log = open('stdout.log', 'w')
+
+        # Process each command in turn.
+        import subprocess, shlex
+        for cmd in handler:
+
+            # Perform substitutions.
+            cmd = cmd.replace('${PREFIX}', dst_dir)
+
+            try:
+                subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
+            except:
+                stdout_log.close()
+                sys.stdout.write('failed.\n')
+                return False
+        stdout_log.close()
+
+        # If it all seemed to work, write a dummy file to indicate this package has been built.
+        success = open('scons_build_success', 'w')
+        success.write(' ')
+        success.close()
+
+        sys.stdout.write('done.\n')
+        return True
 
     def try_link(self, ctx, **kwargs):
-        text = self.get_check_text()
+        text = self.check_text
         bkp = env_setup(ctx.env, **kwargs)
         if self.run:
             res = ctx.TryRun(text, self.ext)
@@ -198,10 +359,10 @@ class Package(object):
     def try_location(self, ctx, base, **kwargs):
         ctx.Log('Checking for %s in %s.'%(self.name, base))
         loc_callback = kwargs.get('loc_callback', None)
-        libs = copy.deepcopy(conv.to_iter(self.get_libs()))
-        extra_libs = copy.deepcopy(conv.to_iter(self.get_extra_libs()))
+        libs = copy.deepcopy(conv.to_iter(self.libs))
+        extra_libs = copy.deepcopy(conv.to_iter(self.extra_libs))
 
-        sub_dirs = conv.to_iter(self.get_sub_dirs())
+        sub_dirs = conv.to_iter(self.sub_dirs)
         if not sub_dirs:
             sub_dirs = [[]]
 
@@ -229,21 +390,11 @@ class Package(object):
             env_restore(ctx.env, bkp)
         return res
 
-    def get_check_text(self):
-        return self.check_text
-
-    def get_libs(self):
-        return self.libs
-
-    def get_extra_libs(self):
-        return self.extra_libs
-
-    def get_sub_dirs(self):
-        return self.sub_dirs
-
     def have_option(self, env, name):
-        if name in env:
+        if name in env and env[name] is not False:
             return True
+
+        # Only check the OS environment if no other options for this package were given.
         for opt in self.options:
             if opt in env:
                 return False
@@ -271,8 +422,16 @@ class Package(object):
 
     def check_options(self, env):
         name = self.name.upper()
+
+        # Either base or include/library paths.
         if self.have_option(env, name + '_DIR') and self.have_any_options(env, name + '_INC_DIR', name + '_LIB_DIR'):
             print '\n'
             print 'Please pecify either %s_DIR or either of %s_INC_DIR or'%(name, name)
             print '%s_LIB_DIR.\n'%name
+            env.Exit(1)
+
+        # Either download or location.
+        elif self.have_option(env, name + '_DOWNLOAD') and self.have_any_options(env, name + '_DIR', name + '_INC_DIR', name + '_LIB_DIR'):
+            print '\n'
+            print 'Cannot specify to download %s and also give a system location.'%self.name
             env.Exit(1)
