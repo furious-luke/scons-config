@@ -21,7 +21,13 @@ def check(sconf):
         for name in conv.to_iter(pkg.test_names):
             getattr(sconf, name)()
 
-def configure(env):
+def configure(env, vars):
+
+    # Save the configuration options here, but not again. This is because certain
+    # options will set other options in the background, and we don't want to mistakenly
+    # think they have been set by the user.
+    vars.Save('config.py', env)
+
     sconf = env.Configure(custom_tests=custom_tests)
     check(sconf)
     sconf.Finish()
