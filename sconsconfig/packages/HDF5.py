@@ -5,13 +5,16 @@ from Package import Package
 class HDF5(Package):
 
     def __init__(self, **kwargs):
-        super(HDF5, self).__init__(**kwargs)
+        defaults = {
+            'download_url': 'http://TODO/hdf5-1.8.7.tar.bz2'
+        }
+        defaults.update(kwargs)
+        super(HDF5, self).__init__(**defaults)
         self.parallel = kwargs.get('parallel', True)
-        self.libs=[['hdf5']]
-        if self.parallel:
-            # Sometimes we see a problem with MPICH2 where the MPL library is included by libhdf5.so too
-            # soon in the link command, causing issues with libmpich.so.
-            self.libs.append(['mpl', 'mpich', 'hdf5'])
+        self.libs=[
+            'hdf5',
+            {'libraries': 'hdf5', 'prepend': False},
+        ]
         self.extra_libs=[
             [], ['z'], ['m'], ['z', 'm'],
         ]
@@ -40,6 +43,13 @@ int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
+
+        # Setup the build handler. I'm going to assume this will work for all architectures.
+        self.set_build_handler([
+            './configure --prefix=${PREFIX} --enable-shared --enable-parallel CC=${MPI_DIR}/bin/mpicc',
+            'make',
+            'make install'
+        ])
 
     def check(self, ctx):
         env = ctx.env

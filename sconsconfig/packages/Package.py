@@ -79,7 +79,7 @@ class Package(object):
         if self.have_option(env, upp + '_DIR'):
             value = self.get_option(env, upp + '_DIR')
             ctx.Log('Found option %s = %s\n'%(upp + '_DIR', value))
-            res = self.try_location(ctx, self.get_option(env, upp + '_DIR'), **kwargs)
+            res = self.try_location(ctx, value, **kwargs)
             if not res[0]:
                 msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
                 ctx.Log(msg)
@@ -118,9 +118,14 @@ class Package(object):
 
         # Check if the user requested to download this package.
         elif self.have_option(env, upp + '_DOWNLOAD'):
+
+            # Perform the auto-management of this package.
             res = self.auto(ctx)
+
+            # For now we assume a package location is set entirely with <NAME>_DIR.
             if res[0]:
-                res = self.try_location(ctx, self.get_option(env, upp + '_DIR'), **kwargs)
+                value = self.get_option(env, upp + '_DIR')
+                res = self.try_location(ctx, value, **kwargs)
                 if not res[0]:
                     msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
                     ctx.Log(msg)
@@ -252,6 +257,9 @@ class Package(object):
                 os.chdir(old_dir)
                 return (0, '')
 
+        # Set the directory location.
+        ctx.env[self.name.upper() + '_DIR'] = dst_dir
+
         sys.stdout.write('  Configuring with downloaded package ... ')
         os.chdir(old_dir)
         return (1, '')
@@ -303,15 +311,31 @@ class Package(object):
         import subprocess, shlex
         for cmd in handler:
 
-            # Perform substitutions.
-            cmd = cmd.replace('${PREFIX}', dst_dir)
+            # It's possible to have a tuple, indicating a function and arguments.
+            if isinstance(cmd, tuple):
+                func = cmd[0]
+                args = cmd[1:]
 
-            try:
-                subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
-            except:
-                stdout_log.close()
-                sys.stdout.write('failed.\n')
-                return False
+                # Perform substitutions.
+                args = [ctx.env.subst(a.replace('${PREFIX}', dst_dir)) for a in args]
+
+                # Call the function.
+                func(*args)
+
+            else:
+
+                # Perform substitutions.
+                cmd = cmd.replace('${PREFIX}', dst_dir)
+                cmd = ctx.env.subst(cmd)
+
+                try:
+                    subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
+                except:
+                    stdout_log.close()
+                    sys.stdout.write('failed.\n')
+                    return False
+
+        # Don't forget to close the log.
         stdout_log.close()
 
         # If it all seemed to work, write a dummy file to indicate this package has been built.
@@ -321,6 +345,25 @@ class Package(object):
 
         sys.stdout.write('done.\n')
         return True
+
+    def env_setup_libs(self, env, libs):
+        defaults = {
+            'prepend': True,
+            'libraries': libs,
+        }
+
+        # If we were given a dictionary update our defaults.
+        if isinstance(libs[0], dict):
+            defaults.update(libs[0])
+            defaults['libraries'] = conv.to_iter(defaults['libraries'])
+
+        # Prepend or append?
+        if defaults['prepend']:
+            libs = defaults['libraries'] + env.get('LIBS', [])
+        else:
+            libs = env.get('LIBS', []) + defaults['libraries']
+
+        return env_setup(env, LIBS=libs)
 
     def try_link(self, ctx, **kwargs):
         text = self.check_text
@@ -340,7 +383,7 @@ class Package(object):
             extra_libs = [[]]
         for l in libs:
             l = conv.to_iter(l)
-            l_bkp = env_setup(ctx.env, LIBS=l + ctx.env.get('LIBS', []))
+            l_bkp = self.env_setup_libs(ctx.env, l)
             for e in extra_libs:
                 e = conv.to_iter(e)
                 e_bkp = env_setup(ctx.env, LIBS=ctx.env.get('LIBS', []) + e)

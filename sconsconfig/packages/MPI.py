@@ -5,8 +5,11 @@ from Package import Package
 class MPI(Package):
 
     def __init__(self, **kwargs):
-        self.download_url = 'http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.4.1p1/mpich2-1.4.1p1.tar.gz'
-        super(MPI, self).__init__(**kwargs)
+        defaults = {
+            'download_url': 'http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.4.1p1/mpich2-1.4.1p1.tar.gz',
+        }
+        defaults.update(kwargs)
+        super(MPI, self).__init__(**defaults)
         self.mpi_compilers = ['mpicc', 'mpic++', 'mpicxx',
                               'mpif77', 'mpif90', 'mpif']
         self.libs=[
