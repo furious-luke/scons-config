@@ -353,7 +353,7 @@ class Package(object):
         }
 
         # If we were given a dictionary update our defaults.
-        if isinstance(libs[0], dict):
+        if len(libs) and isinstance(libs[0], dict):
             defaults.update(libs[0])
             defaults['libraries'] = conv.to_iter(defaults['libraries'])
 
