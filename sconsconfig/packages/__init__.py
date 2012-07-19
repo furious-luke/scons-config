@@ -5,3 +5,4 @@ from FFTW import FFTW
 from PTScotch import PTScotch
 from ParMETIS import ParMETIS
 from boost import boost
+from NLopt import NLopt
