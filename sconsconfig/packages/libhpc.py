@@ -11,7 +11,8 @@ class libhpc(Package):
             'download_url': '',
         }
         defaults.update(kwargs)
-        super(MPI, self).__init__(**defaults)
+        super(libhpc, self).__init__(**defaults)
+        self.ext = '.cc'
         self.libs=[
             ['hpc'],
         ]
@@ -21,7 +22,8 @@ class libhpc(Package):
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
-#include <libhpc.h>
+#include <mpi.h>
+#include <libhpc/libhpc.hh>
 int main(int argc, char* argv[]) {
    int rank;
    MPI_Init(&argc, &argv);
@@ -38,32 +40,15 @@ int main(int argc, char* argv[]) {
 
         # Setup the build handler. I'm going to assume this will work for all architectures.
         self.set_build_handler([
-            './configure --prefix=${PREFIX} --enable-shared --disable-fc --disable-f77',
-            'make',
-            'make install'
+            'scons PREFIX=${PREFIX} install',
         ])
 
     def check(self, ctx):
         env = ctx.env
-        ctx.Message('Checking for MPI ... ')
+        ctx.Message('Checking for libhpc ... ')
         self.check_options(env)
 
-        if os.path.split(ctx.env['CC'])[1] in self.mpi_compilers:
-            if self.have_any_options(env, 'MPI_DIR', 'MPI_INC_DIR', 'MPI_LIB_DIR', 'MPI_LIBS'):
-                print '\n'
-                print 'Cannot supply options for locating an MPI installation in'
-                print 'combination with using an MPI compiler.\n'
-                env.Exit()
-
-            res = self.try_link(ctx)
-            if not res[0]:
-                print '\n'
-                print 'Was unable to use the MPI compiler:'
-                print '  %s'%ctx.env['CC']
-                env.Exit()
-
-        else:
-            res = super(MPI, self).check(ctx)
+        res = super(libhpc, self).check(ctx)
 
         self.check_required(res[0])
         ctx.Result(res[0])
