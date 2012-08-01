@@ -81,10 +81,10 @@ class Package(object):
             ctx.Log('Found option %s = %s\n'%(upp + '_DIR', value))
             res = self.try_location(ctx, value, **kwargs)
             if not res[0]:
-                msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
-                ctx.Log(msg)
-                print msg
-                env.Exit(1)
+                self._msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
+                # ctx.Log(msg)
+                # print msg
+                # env.Exit(1)
 
         elif self.have_any_options(env, upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS'):
             inc_dirs = self.get_option(env, upp + '_INC_DIR').split(';')
@@ -105,16 +105,16 @@ class Package(object):
 
             res = self.try_location(ctx, '', **kwargs)
             if not res[0]:
-                msg = '\n\nUnable to find a valid %s installation using:\n'%name
+                self._msg = '\n\nUnable to find a valid %s installation using:\n'%name
                 if self.have_option(env, upp + '_INC_DIR'):
-                    msg += '  Header directories: %s\n'%str(inc_dirs)
+                    self._msg += '  Header directories: %s\n'%str(inc_dirs)
                 if self.have_option(env, upp + '_LIB_DIR'):
-                    msg += '  Library directories: %s\n'%str(lib_dirs)
+                    self._msg += '  Library directories: %s\n'%str(lib_dirs)
                 if self.have_option(env, upp + '_LIBS'):
-                    msg += '  Libraries: %s\n'%str([l.path for l in cur_libs])
-                ctx.Log(msg)
-                print msg
-                env.Exit(1)
+                    self._msg += '  Libraries: %s\n'%str([l.path for l in cur_libs])
+                # ctx.Log(msg)
+                # print msg
+                # env.Exit(1)
 
         # Check if the user requested to download this package.
         elif self.have_option(env, upp + '_DOWNLOAD'):
@@ -127,10 +127,10 @@ class Package(object):
                 value = self.get_option(env, upp + '_DIR')
                 res = self.try_location(ctx, value, **kwargs)
                 if not res[0]:
-                    msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
-                    ctx.Log(msg)
-                    print msg
-                    env.Exit(1)
+                    self._msg = '\n\nUnable to find a valid %s installation at:\n  %s\n'%(name, value)
+                    # ctx.Log(msg)
+                    # print msg
+                    # env.Exit(1)
 
         else:
             ctx.Log('No options found, trying empty location.\n')
@@ -166,6 +166,14 @@ class Package(object):
     def check_required(self, result, ctx=None):
         name = self.name
         upp = name.upper()
+
+        # Failed specified location?
+        if not result and hasattr(self, '_msg'):
+            ctx.Log(self._msg)
+            print self._msg
+            sys.exit(1)
+
+        # General failure?
         if not result and self.required:
             print '\n'
             print 'Unable to locate required package %s. You can specify'%name
@@ -357,6 +365,9 @@ class Package(object):
             defaults.update(libs[0])
             defaults['libraries'] = conv.to_iter(defaults['libraries'])
 
+        # Remove any pre-existing libraries.
+        defaults['libraries'] = [d for d in defaults['libraries'] if d not in env.get('LIBS', [])]
+
         # Prepend or append?
         if defaults['prepend']:
             libs = defaults['libraries'] + env.get('LIBS', [])
@@ -410,8 +421,8 @@ class Package(object):
             sub_dirs = [[]]
 
         for inc_sub_dirs, lib_sub_dirs in sub_dirs:
-            inc_sub_dirs = conv.to_iter(inc_sub_dirs)
-            lib_sub_dirs = conv.to_iter(lib_sub_dirs)
+            inc_sub_dirs = list(conv.to_iter(inc_sub_dirs))
+            lib_sub_dirs = list(conv.to_iter(lib_sub_dirs))
 
             for i in range(len(inc_sub_dirs)):
                 if not os.path.isabs(inc_sub_dirs[i]):
@@ -419,6 +430,11 @@ class Package(object):
             for i in range(len(lib_sub_dirs)):
                 if not os.path.isabs(lib_sub_dirs[i]):
                     lib_sub_dirs[i] = os.path.join(base, lib_sub_dirs[i])
+
+            # Remove any directories that can already be found in
+            # in their respective lists.
+            inc_sub_dirs = [d for d in inc_sub_dirs if d not in ctx.env.get('CPPPATH', [])]
+            lib_sub_dirs = [d for d in lib_sub_dirs if d not in ctx.env.get('LIBPATH', [])]
 
             if loc_callback:
                 loc_callback(ctx, base, inc_sub_dirs, lib_sub_dirs, libs, extra_libs)

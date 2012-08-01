@@ -7,3 +7,5 @@ from ParMETIS import ParMETIS
 from boost import boost
 from NLopt import NLopt
 from libhpc import libhpc
+from SOCI import SOCI
+from sqlite3 import sqlite3
