@@ -117,7 +117,7 @@ class Package(object):
                 # env.Exit(1)
 
         # Check if the user requested to download this package.
-        elif self.have_option(env, upp + '_DOWNLOAD'):
+        elif self.have_any_options(env, upp + '_DOWNLOAD', 'DOWNLOAD_ALL'):
 
             # Perform the auto-management of this package.
             res = self.auto(ctx)
@@ -287,15 +287,29 @@ class Package(object):
     def auto_unpack(self, ctx, filename, build_dir):
         sys.stdout.write('  Extracting ... ')
         sys.stdout.flush()
-        try:
-            import tarfile
-            tf = tarfile.open(filename)
-            tf.extractall(build_dir)
-            sys.stdout.write('done.\n')
-            return True
-        except:
-            sys.stdout.write('failed.\n')
-            return False
+
+        # TODO: DRY
+        if os.path.splitext(filename)[1] == '.zip':
+            try:
+                import zipfile
+                zf = zipfile.ZipFile(filename)
+                zf.extractall(build_dir)
+                zf.close()
+                sys.stdout.write('done.\n')
+                return True
+            except:
+                sys.stdout.write('failed.\n')
+                return False
+        else:
+            try:
+                import tarfile
+                tf = tarfile.open(filename)
+                tf.extractall(build_dir)
+                sys.stdout.write('done.\n')
+                return True
+            except:
+                sys.stdout.write('failed.\n')
+                return False
 
     def auto_build(self, ctx, dst_dir):
         sys.stdout.write('  Building package, this could take a while ... ')
@@ -332,6 +346,13 @@ class Package(object):
 
             else:
 
+                # If the first character in a command is an "!", then it means we allow
+                # errors from this command.
+                allow_errors = False
+                if cmd[0] == '!':
+                    allow_errors = True
+                    cmd = cmd[1:]
+
                 # Perform substitutions.
                 cmd = cmd.replace('${PREFIX}', dst_dir)
                 cmd = ctx.env.subst(cmd)
@@ -339,9 +360,10 @@ class Package(object):
                 try:
                     subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
                 except:
-                    stdout_log.close()
-                    sys.stdout.write('failed.\n')
-                    return False
+                    if not allow_errors:
+                        stdout_log.close()
+                        sys.stdout.write('failed.\n')
+                        return False
 
         # Don't forget to close the log.
         stdout_log.close()

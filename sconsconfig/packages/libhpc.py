@@ -8,13 +8,14 @@ class libhpc(Package):
 
     def __init__(self, **kwargs):
         defaults = {
-            'download_url': '',
+            'download_url': 'http://github.com/furious-luke/libhpc/tarball/master',
         }
         defaults.update(kwargs)
         super(libhpc, self).__init__(**defaults)
         self.ext = '.cc'
         self.libs=[
-            ['hpc'],
+            'hpc',
+            {'libraries': 'hpc', 'prepend': False},
         ]
         self.extra_libs=[
             [],
@@ -50,6 +51,6 @@ int main(int argc, char* argv[]) {
 
         res = super(libhpc, self).check(ctx)
 
-        self.check_required(res[0])
+        self.check_required(res[0], ctx)
         ctx.Result(res[0])
         return res[0]

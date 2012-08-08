@@ -4,7 +4,12 @@ from Package import Package
 class boost(Package):
 
     def __init__(self, **kwargs):
-        super(boost, self).__init__(**kwargs)
+        defaults = {
+            'download_url': 'http://downloads.sourceforge.net/project/boost/boost/1.50.0/boost_1_50_0.tar.gz',
+        }
+        defaults.update(kwargs)
+        super(boost, self).__init__(**defaults)
+        self.ext = '.cc'
         self.sub_dirs = [('', ''), ('include', '')]
         self.check_text = r'''
 #include <stdlib.h>
@@ -14,7 +19,10 @@ int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
-        self.ext = '.cc'
+        self.set_build_handler([
+            './bootstrap.sh',
+            '!./b2 install --prefix=${PREFIX}'
+        ])
 
     def check(self, ctx):
         env = ctx.env
