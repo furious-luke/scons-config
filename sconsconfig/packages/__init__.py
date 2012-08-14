@@ -10,3 +10,4 @@ from libhpc import libhpc
 from SOCI import SOCI
 from sqlite3 import sqlite3
 from rapidxml import rapidxml
+from re2 import re2

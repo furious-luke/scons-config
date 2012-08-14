@@ -10,7 +10,10 @@ class boost(Package):
         defaults.update(kwargs)
         super(boost, self).__init__(**defaults)
         self.ext = '.cc'
-        self.sub_dirs = [('', ''), ('include', '')]
+        self.sub_dirs = [
+            ('', ''),
+            ('include', ''),
+        ]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
