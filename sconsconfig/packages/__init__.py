@@ -11,3 +11,5 @@ from SOCI import SOCI
 from sqlite3 import sqlite3
 from rapidxml import rapidxml
 from re2 import re2
+from libusb import libusb
+from alsa import alsa
