@@ -52,6 +52,7 @@ class Package(object):
     def __init__(self, required=True, download_url=''):
         self.name = self.__class__.__name__
         self.required = required
+        self.found = False
         self.libs = []
         self.extra_libs = []
         self.sub_dirs = self.DEFAULT_SUB_DIRS
@@ -166,6 +167,9 @@ class Package(object):
     def check_required(self, result, ctx=None):
         name = self.name
         upp = name.upper()
+
+        # Stash the result.
+        self.found = bool(result)
 
         # Failed specified location?
         if not result and hasattr(self, '_msg'):

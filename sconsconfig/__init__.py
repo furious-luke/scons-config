@@ -2,6 +2,7 @@ from utils import conv
 import packages
 
 enabled_packages = []
+package_map = {}
 custom_tests = {}
 
 def select(*args):
@@ -10,7 +11,11 @@ def select(*args):
         if pkg in enabled_packages:
             continue
         enabled_packages.append(pkg)
+        package_map[pkg.__module__] = pkg
         custom_tests.update(pkg.custom_tests)
+
+def package(klass):
+    return package_map.get(klass.__module__, None)
 
 def add_options(vars):
     for pkg in enabled_packages:
