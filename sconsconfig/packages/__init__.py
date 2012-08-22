@@ -13,3 +13,4 @@ from rapidxml import rapidxml
 from re2 import re2
 from libusb import libusb
 from alsa import alsa
+from libsndfile import libsndfile
