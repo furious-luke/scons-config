@@ -16,3 +16,4 @@ from alsa import alsa
 from libsndfile import libsndfile
 from libsamplerate import libsamplerate
 from Eigen import Eigen
+from SkyMaker import SkyMaker
