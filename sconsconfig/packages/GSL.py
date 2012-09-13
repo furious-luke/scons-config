@@ -6,11 +6,11 @@ class GSL(Package):
 
     def __init__(self, **kwargs):
         super(GSL, self).__init__(**kwargs)
-        self.libs=['gsl']
-        self.extra_libs=[
-            [],
-            ['gslcblas']
+        self.libs=[
+            ['gsl', 'gslcblas'],
+            ['gsl'],
         ]
+        self.extra_libs=[]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
