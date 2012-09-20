@@ -8,7 +8,7 @@ class sqlite3(Package):
 
     def __init__(self, **kwargs):
         defaults = {
-            'download_url': '',
+            'download_url': 'http://github.com/furious-luke/sqlite3-ext/tarball/master',
         }
         defaults.update(kwargs)
         super(sqlite3, self).__init__(**defaults)
@@ -30,7 +30,8 @@ int main(int argc, char* argv[]) {
 
         # Setup the build handler. I'm going to assume this will work for all architectures.
         self.set_build_handler([
-            'scons PREFIX=${PREFIX} install',
+            './configure --prefix=${PREFIX}',
+            'make install',
         ])
 
     def check(self, ctx):

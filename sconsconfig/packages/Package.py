@@ -172,7 +172,7 @@ class Package(object):
         self.found = bool(result)
 
         # Failed specified location?
-        if not result and hasattr(self, '_msg'):
+        if not result and hasattr(self, '_msg') and self.required:
             ctx.Log(self._msg)
             print self._msg
             sys.exit(1)
@@ -189,7 +189,7 @@ class Package(object):
 
         # If the package is not required but was found anyway, add a preprocessor
         # flag indicating such.
-        else:
+        elif result:
             if ctx and not self.required:
                 ctx.env.AppendUnique(CPPDEFINES=['HAVE_' + upp])
 
@@ -234,11 +234,13 @@ class Package(object):
         src_dir = os.path.join('external_packages', 'src')
         if not os.path.exists(src_dir):
             os.makedirs(src_dir)
+        ctx.Log("Downloading into " + src_dir + "\n")
 
         # Setup the filename and build directory name and distination directory.
-        filename = self.download_url[self.download_url.rfind('/') + 1:]
+        filename = self.name + self.download_url[self.download_url.rfind('/') + 1:]
         build_dir = self.name.lower()
         dst_dir = os.path.abspath(os.path.join('external_packages', self.name.lower()))
+        ctx.Log("Building into " + dst_dir + "\n")
 
         # Change to the source directory.
         old_dir = os.getcwd()
@@ -279,6 +281,7 @@ class Package(object):
     def auto_download(self, ctx, filename):
         sys.stdout.write('  Downloading ... ')
         sys.stdout.flush()
+        ctx.Log("Downloading file from " + self.download_url + "\n")
         try:
             import urllib
             urllib.urlretrieve(self.download_url, filename)
@@ -286,14 +289,17 @@ class Package(object):
             return True
         except:
             sys.stdout.write('failed.\n')
+            ctx.Log("Failed to download file\n")
             return False
 
     def auto_unpack(self, ctx, filename, build_dir):
         sys.stdout.write('  Extracting ... ')
         sys.stdout.flush()
+        ctx.Log("Extracting contents of " + filename + "\n")
 
         # TODO: DRY
         if os.path.splitext(filename)[1] == '.zip':
+            ctx.Log("Using zip\n")
             try:
                 import zipfile
                 zf = zipfile.ZipFile(filename)
@@ -303,8 +309,10 @@ class Package(object):
                 return True
             except:
                 sys.stdout.write('failed.\n')
+                ctx.Log("Failed to extract file\n")
                 return False
         else:
+            ctx.Log("Using tar\n")
             try:
                 import tarfile
                 tf = tarfile.open(filename)
@@ -313,11 +321,13 @@ class Package(object):
                 return True
             except:
                 sys.stdout.write('failed.\n')
+                ctx.Log("Failed to extract file\n")
                 return False
 
     def auto_build(self, ctx, dst_dir):
         sys.stdout.write('  Building package, this could take a while ... ')
         sys.stdout.flush()
+        ctx.Log("Building package in " + dst_dir + "\n")
 
         # Remove any existing file used to indicate successful builds.
         import os
@@ -328,6 +338,7 @@ class Package(object):
         handler = self.get_build_handler()
         if handler is None:
             sys.stdout.write('failed.\n  Sorry, this system/architecture is not supported.\n')
+            ctx.Log("Failed to locate build handler\n")
             return False
 
         # Make a file to log stdout from the commands.
@@ -339,6 +350,7 @@ class Package(object):
 
             # It's possible to have a tuple, indicating a function and arguments.
             if isinstance(cmd, tuple):
+                ctx.Log("Command is a Python function\n")
                 func = cmd[0]
                 args = cmd[1:]
 
@@ -360,13 +372,15 @@ class Package(object):
                 # Perform substitutions.
                 cmd = cmd.replace('${PREFIX}', dst_dir)
                 cmd = ctx.env.subst(cmd)
+                ctx.Log(cmd + "\n")
 
                 try:
-                    subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
+                    subprocess.check_call(cmd, stdout=stdout_log, stderr=subprocess.STDOUT, shell=True)
                 except:
                     if not allow_errors:
                         stdout_log.close()
                         sys.stdout.write('failed.\n')
+                        ctx.Log("Command failed\n")
                         return False
 
         # Don't forget to close the log.
