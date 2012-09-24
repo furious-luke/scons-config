@@ -66,6 +66,23 @@ class Package(object):
         self.download_url = download_url
         self.build_handlers = {}
 
+        self.base_dir = None
+        self._used_inc_dirs = None
+        self._used_libs = None
+
+    ##
+    #  TODO: Make more general
+    def include_directories(self):
+        return os.path.join(self.base_dir, 'include')
+
+    ##
+    #  TODO: This needs to be more general.
+    def libraries(self):
+        if self._used_libs:
+            return os.path.join(self.base_dir, 'lib', 'lib' + self._used_libs[0] + '.so')
+        else:
+            return ''
+
     ## Run the configuration checks for this package.
     #  @param[in,out] ctx The configuration context, retrieved from SCons.
     def check(self, ctx, **kwargs):
@@ -443,6 +460,7 @@ class Package(object):
                     if not self.auto_add_libs:
                         env_restore(ctx.env, e_bkp)
                         env_restore(ctx.env, l_bkp)
+                    self._used_libs = l
                     break
                 env_restore(ctx.env, e_bkp)
             if res[0]:
@@ -485,6 +503,7 @@ class Package(object):
                             RPATH=ctx.env.get('RPATH', []) + lib_sub_dirs)
             res = self.try_libs(ctx, libs, extra_libs, **kwargs)
             if res[0]:
+                self.base_dir = base # set base directory
                 break
             env_restore(ctx.env, bkp)
         return res

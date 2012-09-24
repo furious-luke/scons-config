@@ -1,5 +1,6 @@
 import sys, os
 from Package import Package
+import sconsconfig as config
 
 class SOCI(Package):
 
@@ -27,16 +28,32 @@ int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
-        self.set_build_handler([
-            'cmake -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX} .',
-            'make',
-            'make install'
-        ])
 
     def check(self, ctx):
         env = ctx.env
         ctx.Message('Checking for SOCI ... ')
         self.check_options(env)
+
+        # SOCI can use Boost, so check to see if Boost is in our
+        # set of configuration options and set accordingly.
+        cmake = 'cmake -DCMAKE_INSTALL_PREFIX:PATH=${PREFIX}'
+        boost = config.package(config.packages.boost)
+        # if boost and boost.found and boost.base_dir:
+        #     cmake += ' -DBOOST_DIR:PATH=' + boost.base_dir
+        cmake += ' -DWITH_BOOST=off'
+
+        # Check for sqlite3, like boost.
+        sqlite = config.package(config.packages.sqlite3)
+        if sqlite and sqlite.found:
+            cmake += ' -DSQLITE3_INCLUDE_DIR:PATH=' + sqlite.include_directories()
+            cmake += ' -DSQLITE3_LIBRARIES:PATH=' + sqlite.libraries()
+
+        cmake += ' .'
+        self.set_build_handler([
+            cmake,
+            'make',
+            'make install'
+        ])
 
         # Check each backend for existence.
         backends = {
