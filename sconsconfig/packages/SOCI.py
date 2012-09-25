@@ -46,7 +46,11 @@ int main(int argc, char* argv[]) {
         sqlite = config.package(config.packages.sqlite3)
         if sqlite and sqlite.found:
             cmake += ' -DSQLITE3_INCLUDE_DIR:PATH=' + sqlite.include_directories()
-            cmake += ' -DSQLITE3_LIBRARIES:PATH=' + sqlite.libraries()
+            cmake += ' -DSQLITE3_LIBRARY:FILEPATH=' + sqlite.libraries()
+
+        # For some reason SOCI is incompatible with gcc 4.7.1.
+        # Need to switch off testing and the empty thingy.
+        cmake += ' -DSOCI_TEST:BOOL=off -DSOCI_EMPTY:BOOL=off'
 
         cmake += ' .'
         self.set_build_handler([

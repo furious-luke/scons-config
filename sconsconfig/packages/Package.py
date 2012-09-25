@@ -1,4 +1,5 @@
-import os, sys, copy
+import os, sys, copy, shutil
+import sconsconfig.utils as utils
 from sconsconfig.utils import conv
 from SCons.Variables import BoolVariable
 
@@ -322,9 +323,8 @@ class Package(object):
                 zf = zipfile.ZipFile(filename)
                 zf.extractall(build_dir)
                 zf.close()
-                sys.stdout.write('done.\n')
-                return True
             except:
+                shutil.rmtree(build_dir, True)
                 sys.stdout.write('failed.\n')
                 ctx.Log("Failed to extract file\n")
                 return False
@@ -334,12 +334,25 @@ class Package(object):
                 import tarfile
                 tf = tarfile.open(filename)
                 tf.extractall(build_dir)
-                sys.stdout.write('done.\n')
-                return True
             except:
+                shutil.rmtree(build_dir, True)
                 sys.stdout.write('failed.\n')
                 ctx.Log("Failed to extract file\n")
                 return False
+
+        # If there is a patch, try to patch code.
+        patch = os.path.join(utils.get_data_prefix(), 'patches', self.name.lower() + '.patch')
+        if os.path.exists(patch):
+            try:
+                utils.apply_patch(build_dir, patch)
+            except:
+                shutil.rmtree(build_dir, True)
+                sys.stdout.write('failed to apply patch\n')
+                ctx.Log('failed to apply patch\n')
+                return False
+
+        sys.stdout.write('done.\n')
+        return True
 
     def auto_build(self, ctx, dst_dir):
         sys.stdout.write('  Building package, this could take a while ... ')
