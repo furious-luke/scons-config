@@ -1,5 +1,6 @@
 import sys, os
 from Package import Package
+import sconsconfig as config
 
 ##
 ##
@@ -39,15 +40,29 @@ int main(int argc, char* argv[]) {
 }
 '''
 
-        # Setup the build handler. I'm going to assume this will work for all architectures.
-        self.set_build_handler([
-            'scons PREFIX=${PREFIX} install',
-        ])
-
     def check(self, ctx):
         env = ctx.env
         ctx.Message('Checking for libhpc ... ')
         self.check_options(env)
+
+        # Need to supply directories for dependencies, if available.
+        cmd = 'scons PREFIX=${PREFIX}'
+        pkg = config.package(config.packages.boost)
+        if pkg and pkg.found:
+            cmd += ' BOOST_DIR=' + pkg.base_dir
+        pkg = config.package(config.packages.MPI)
+        if pkg and pkg.found:
+            cmd += ' MPI_DIR=' + pkg.base_dir
+        pkg = config.package(config.packages.HDF5)
+        if pkg and pkg.found:
+            cmd += ' HDF5_DIR=' + pkg.base_dir
+        pkg = config.package(config.packages.rapidxml)
+        if pkg and pkg.found:
+            cmd += ' RAPIDXML_DIR=' + pkg.base_dir
+        cmd += ' install'
+        self.set_build_handler([
+            cmd,
+        ])
 
         res = super(libhpc, self).check(ctx)
 
