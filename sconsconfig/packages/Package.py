@@ -1,4 +1,4 @@
-import os, sys, copy, shutil
+import os, sys, copy, shutil, subprocess, shlex
 import sconsconfig.utils as utils
 from sconsconfig.utils import conv
 from SCons.Variables import BoolVariable
@@ -343,11 +343,11 @@ class Package(object):
         # If there is a patch, try to patch code.
         patch = os.path.join(utils.get_data_prefix(), 'patches', self.name.lower() + '.patch')
         if os.path.exists(patch):
+            ctx.Log('Trying to apply patch.')
             try:
                 utils.apply_patch(build_dir, patch)
             except:
                 shutil.rmtree(build_dir, True)
-                sys.stdout.write('failed to apply patch\n')
                 ctx.Log('failed to apply patch\n')
                 return False
 
@@ -375,7 +375,6 @@ class Package(object):
         stdout_log = open('stdout.log', 'w')
 
         # Process each command in turn.
-        import subprocess, shlex
         for cmd in handler:
 
             # It's possible to have a tuple, indicating a function and arguments.
