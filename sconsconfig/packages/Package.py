@@ -1,4 +1,4 @@
-import os, sys, copy, shutil
+import os, sys, copy, shutil, subprocess, shlex
 import sconsconfig.utils as utils
 from sconsconfig.utils import conv
 from SCons.Variables import BoolVariable
@@ -376,7 +376,6 @@ class Package(object):
         stdout_log = open('stdout.log', 'w')
 
         # Process each command in turn.
-        import subprocess, shlex
         for cmd in handler:
 
             # It's possible to have a tuple, indicating a function and arguments.
@@ -406,7 +405,7 @@ class Package(object):
                 ctx.Log(cmd + "\n")
 
                 try:
-                    subprocess.check_call(cmd, stdout=stdout_log, stderr=subprocess.STDOUT, shell=True)
+                    subprocess.check_call(shlex.split(cmd), stdout=stdout_log, stderr=subprocess.STDOUT)
                 except:
                     if not allow_errors:
                         stdout_log.close()
