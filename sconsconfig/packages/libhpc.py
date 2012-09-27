@@ -45,24 +45,24 @@ int main(int argc, char* argv[]) {
         ctx.Message('Checking for libhpc ... ')
         self.check_options(env)
 
-        # Need to supply directories for dependencies, if available.
+        # Check for a bunch of things we need for auto building.
         cmd = 'scons PREFIX=${PREFIX}'
         pkg = config.package(config.packages.boost)
-        if pkg and pkg.found:
+        if pkg and pkg.found and pkg.base_dir:
             cmd += ' BOOST_DIR=' + pkg.base_dir
         pkg = config.package(config.packages.MPI)
-        if pkg and pkg.found:
+        if pkg and pkg.found and pkg.base_dir:
             cmd += ' MPI_DIR=' + pkg.base_dir
         pkg = config.package(config.packages.HDF5)
-        if pkg and pkg.found:
+        if pkg and pkg.found and pkg.base_dir:
             cmd += ' HDF5_DIR=' + pkg.base_dir
         pkg = config.package(config.packages.rapidxml)
-        if pkg and pkg.found:
+        if pkg and pkg.found and pkg.base_dir:
             cmd += ' RAPIDXML_DIR=' + pkg.base_dir
         cmd += ' install'
-        self.set_build_handler([
-            cmd,
-        ])
+
+        # Setup the build handler. I'm going to assume this will work for all architectures.
+        self.set_build_handler([cmd])
 
         res = super(libhpc, self).check(ctx)
 

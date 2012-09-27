@@ -54,6 +54,7 @@ class Package(object):
         self.name = self.__class__.__name__
         self.required = required
         self.found = False
+        self.headers = []
         self.libs = []
         self.extra_libs = []
         self.sub_dirs = self.DEFAULT_SUB_DIRS
@@ -490,6 +491,7 @@ class Package(object):
         if not sub_dirs:
             sub_dirs = [[]]
 
+        res = (False, None)
         for inc_sub_dirs, lib_sub_dirs in sub_dirs:
             inc_sub_dirs = list(conv.to_iter(inc_sub_dirs))
             lib_sub_dirs = list(conv.to_iter(lib_sub_dirs))
@@ -508,6 +510,24 @@ class Package(object):
 
             if loc_callback:
                 loc_callback(ctx, base, inc_sub_dirs, lib_sub_dirs, libs, extra_libs)
+
+            ctx.Log('Trying include dirs: ' + str(inc_sub_dirs) + '\n')
+            ctx.Log('Trying library dirs: ' + str(lib_sub_dirs) + '\n')
+
+            # Before continuing, try and find all of the sample headers.
+            found_headers = True
+            for hdr in self.headers:
+                found = False
+                for path in inc_sub_dirs:
+                    if os.path.exists(os.path.join(path, hdr)):
+                        found = True
+                        break
+                if not found:
+                    ctx.Log('Failed to find ' + hdr + '\n')
+                    found_headers = False
+                    break
+            if not found_headers:
+                continue
 
             bkp = env_setup(ctx.env,
                             CPPPATH=ctx.env.get('CPPPATH', []) + inc_sub_dirs,

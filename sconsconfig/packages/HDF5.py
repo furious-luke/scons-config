@@ -44,6 +44,9 @@ int main(int argc, char* argv[]) {
 }
 '''
 
+        # For the same reasons as MPI, disable running.
+        self.run = False
+
         # Setup the build handler. I'm going to assume this will work for all architectures.
         self.set_build_handler([
             './configure --prefix=${PREFIX} --enable-shared --enable-parallel CC=${MPI_DIR}/bin/mpicc',

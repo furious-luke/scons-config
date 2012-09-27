@@ -14,6 +14,7 @@ class boost(Package):
             ('include', ''),
             ('', ''),
         ]
+        self.headers = ['boost/optional.hpp']
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
