@@ -344,11 +344,11 @@ class Package(object):
         # If there is a patch, try to patch code.
         patch = os.path.join(utils.get_data_prefix(), 'patches', self.name.lower() + '.patch')
         if os.path.exists(patch):
+            ctx.Log('Trying to apply patch.')
             try:
                 utils.apply_patch(build_dir, patch)
             except:
                 shutil.rmtree(build_dir, True)
-                sys.stdout.write('failed to apply patch\n')
                 ctx.Log('failed to apply patch\n')
                 return False
 
