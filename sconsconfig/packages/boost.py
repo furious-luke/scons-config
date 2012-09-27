@@ -11,8 +11,8 @@ class boost(Package):
         super(boost, self).__init__(**defaults)
         self.ext = '.cc'
         self.sub_dirs = [
-            ('', ''),
             ('include', ''),
+            ('', ''),
         ]
         self.headers = ['boost/optional.hpp']
         self.check_text = r'''
