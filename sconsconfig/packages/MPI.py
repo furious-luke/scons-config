@@ -12,6 +12,7 @@ class MPI(Package):
         super(MPI, self).__init__(**defaults)
         self.mpi_compilers = ['mpicc', 'mpic++', 'mpicxx',
                               'mpif77', 'mpif90', 'mpif']
+        self.headers = ['mpi.h']
         self.libs=[
             ['mpich'],
             ['pmpich', 'mpich'],
@@ -46,6 +47,10 @@ int main(int argc, char* argv[]) {
 }
 '''
 
+        # MPI on a cluster usually won't run properly, so don't
+        # try to.
+        self.run = False
+
         # Setup the build handler. I'm going to assume this will work for all architectures.
         self.set_build_handler([
             './configure --prefix=${PREFIX} --enable-shared --disable-fc --disable-f77',
@@ -75,6 +80,6 @@ int main(int argc, char* argv[]) {
         else:
             res = super(MPI, self).check(ctx)
 
-        self.check_required(res[0])
+        self.check_required(res[0], ctx)
         ctx.Result(res[0])
         return res[0]
