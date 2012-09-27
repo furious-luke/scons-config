@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 '''
         self.set_build_handler([
             (make_dir, '${PREFIX}'),
-            'cp * ${PREFIX}',
+            'cp rapidxml.hpp rapidxml_iterators.hpp rapidxml_print.hpp rapidxml_utils.hpp ${PREFIX}',
         ])
 
     def check(self, ctx):
