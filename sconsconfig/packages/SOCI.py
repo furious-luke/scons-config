@@ -5,6 +5,7 @@ import sconsconfig as config
 class SOCI(Package):
 
     def __init__(self, **kwargs):
+        self.backends = set(kwargs.pop('backends', []))
         defaults = {
             'download_url': 'http://downloads.sourceforge.net/project/soci/soci/soci-3.1.0/soci-3.1.0.zip',
         }
@@ -48,6 +49,12 @@ int main(int argc, char* argv[]) {
             cmake += ' -DSQLITE3_INCLUDE_DIR:PATH=' + sqlite.include_directories()
             cmake += ' -DSQLITE3_LIBRARY:FILEPATH=' + sqlite.libraries()
 
+        # Check for MySQL.
+        pkg = config.package(config.packages.MySQL)
+        if pkg and pkg.found and pkg.base_dir:
+            cmake += ' -DMYSQL_INCLUDE_DIR:PATH=' + pkg.include_directories()
+            cmake += ' -DMYSQL_LIBRARY:FILEPATH=' + pkg.libraries()
+
         # For some reason SOCI is incompatible with gcc 4.7.1.
         # Need to switch off testing and the empty thingy.
         cmake += ' -DSOCI_TEST:BOOL=off -DSOCI_EMPTY:BOOL=off'
@@ -77,6 +84,11 @@ int main(int argc, char* argv[]) {
             if res[0]:
                 found = True
                 env.MergeFlags('-DHAVESOCI' + be.upper())
+
+            # If this is a required backend, terminate with failure.
+            elif be in self.backends:
+                found = False
+                break
 
         self.check_required(found, ctx)
         ctx.Result(found)
