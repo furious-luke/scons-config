@@ -25,10 +25,13 @@ class HDF5(Package):
 #include <hdf5.h>
 #include <mpi.h>
 int main(int argc, char* argv[]) {
-   hid_t plist_id, file_id;
+   hid_t plist_id, file_id, space;
+   hsize_t dims[1];
    int rank;
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   dims[0] = 10;
+   space = H5Screate_simple(1, dims, NULL);
    MPI_Finalize();
    return EXIT_SUCCESS;
 }
@@ -39,7 +42,10 @@ int main(int argc, char* argv[]) {
 #include <stdio.h>
 #include <hdf5.h>
 int main(int argc, char* argv[]) {
-   hid_t plist_id, file_id;
+   hid_t plist_id, file_id, space;
+   hsize_t dims[1];
+   dims[0] = 10;
+   space = H5Screate_simple(1, dims, NULL);
    return EXIT_SUCCESS;
 }
 '''

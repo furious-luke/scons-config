@@ -14,11 +14,12 @@ class MPI(Package):
                               'mpif77', 'mpif90', 'mpif']
         self.headers = ['mpi.h']
         self.libs=[
-            ['mpich'],
-            ['pmpich', 'mpich'],
-            ['mpich', 'mpl'],
-            ['pmpich', 'mpich', 'mpl'],
-            ['mpi'],
+            ['mpich'],                   # mpich/mpich2
+            ['pmpich', 'mpich'],         # mpich2
+            ['mpich', 'mpl'],            # mpich2
+            ['pmpich', 'mpich', 'mpl'],  # mpich2
+            ['mpi', 'mpi_cxx'],          # openmpi
+            ['mpi'],                     # openmpi
         ]
         self.extra_libs=[
             [],
