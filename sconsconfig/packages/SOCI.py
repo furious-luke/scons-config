@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
 
         # Check for sqlite3, like boost.
         sqlite = config.package(config.packages.sqlite3)
-        if sqlite and sqlite.found:
+        if sqlite and sqlite.found and sqlite.base_dir:
             cmake += ' -DSQLITE3_INCLUDE_DIR:PATH=' + sqlite.include_directories()
             cmake += ' -DSQLITE3_LIBRARY:FILEPATH=' + sqlite.libraries()
 
