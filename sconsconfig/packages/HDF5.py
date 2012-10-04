@@ -12,8 +12,8 @@ class HDF5(Package):
         super(HDF5, self).__init__(**defaults)
         self.parallel = kwargs.get('parallel', True)
         self.libs=[
-            'hdf5',
             {'libraries': 'hdf5', 'prepend': False},
+            'hdf5',
         ]
         self.extra_libs=[
             [], ['z'], ['m'], ['z', 'm'],
@@ -25,13 +25,27 @@ class HDF5(Package):
 #include <hdf5.h>
 #include <mpi.h>
 int main(int argc, char* argv[]) {
-   hid_t plist_id, file_id, space;
+   hid_t plist_id, file_id, mem_space, file_space, dset_id;
    hsize_t dims[1];
+   int data[10];
    int rank;
+   MPI_Info info = MPI_INFO_NULL;
    MPI_Init(&argc, &argv);
    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   plist_id = H5Pcreate(H5P_FILE_ACCESS);
+   H5Pset_fapl_mpio(plist_id, MPI_COMM_WORLD, info);
+   file_id = H5Fcreate("testfile", H5F_ACC_TRUNC, H5P_DEFAULT, plist_id);
+   H5Pclose(plist_id);
    dims[0] = 10;
-   space = H5Screate_simple(1, dims, NULL);
+   mem_space = H5Screate_simple(1, dims, NULL);
+   file_space = H5Screate_simple(1, dims, NULL);
+   dset_id = H5Dcreate1(file_id, "test", H5T_NATIVE_INT, file_space, H5P_DEFAULT);
+   H5Sselect_all(mem_space);
+   H5Sselect_all(file_space);
+   plist_id = H5Pcreate(H5P_DATASET_XFER);
+   H5Pset_dxpl_mpio(plist_id, H5FD_MPIO_COLLECTIVE);
+   H5Dwrite(dset_id, H5T_NATIVE_INT, mem_space, file_space, plist_id, data);
+   H5Fclose(file_id);
    MPI_Finalize();
    return EXIT_SUCCESS;
 }
