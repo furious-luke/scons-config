@@ -5,9 +5,13 @@ from Package import Package
 class FFTW3(Package):
 
     def __init__(self, **kwargs):
+        use_float = kwargs.pop('use_float', False)
         super(FFTW3, self).__init__(**kwargs)
-        self.libs=['fftw3']
-        self.extra_libs=[]
+        if use_float:
+            self.libs = ['fftw3f']
+        else:
+            self.libs = ['fftw3']
+        self.extra_libs = []
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
