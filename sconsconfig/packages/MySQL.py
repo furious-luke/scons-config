@@ -13,6 +13,10 @@ class MySQL(Package):
         defaults.update(kwargs)
         super(MySQL, self).__init__(**defaults)
         self.ext = '.c'
+        self.sub_dirs = [
+            ('include/mysql', 'lib'),
+            ('include/mysql', 'lib64'),
+        ]
         self.headers = ['mysql.h']
         self.libs = ['mysqlclient']
         self.extra_libs = ['dl']
