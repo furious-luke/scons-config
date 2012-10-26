@@ -55,6 +55,12 @@ int main(int argc, char* argv[]) {
             cmake += ' -DMYSQL_INCLUDE_DIR:PATH=' + pkg.include_directories()
             cmake += ' -DMYSQL_LIBRARY:FILEPATH=' + pkg.libraries()
 
+        # Check for PostgreSQL.
+        pkg = config.package(config.packages.PostgreSQL)
+        if pkg and pkg.found and pkg.base_dir:
+            cmake += ' -DPOSTGRESQL_INCLUDE_DIR:PATH=' + pkg.include_directories()
+            cmake += ' -DPOSTGRESQL_LIBRARY:FILEPATH=' + pkg.libraries()
+
         # For some reason SOCI is incompatible with gcc 4.7.1.
         # Need to switch off testing and the empty thingy.
         cmake += ' -DSOCI_TEST:BOOL=off -DSOCI_EMPTY:BOOL=off'
@@ -74,6 +80,10 @@ int main(int argc, char* argv[]) {
             'mysql': {
                 'libs': ['soci_core', 'soci_mysql'],
                 'extra_libs': ['dl', 'mysqlclient'],
+            },
+            'postgresql': {
+                'libs': ['soci_core', 'soci_postgresql'],
+                'extra_libs': ['dl', 'pq'],
             },
         }
         found = False
