@@ -19,3 +19,4 @@ from libsamplerate import libsamplerate
 from Eigen import Eigen
 from SkyMaker import SkyMaker
 from MySQL import MySQL
+from PostgreSQL import PostgreSQL
