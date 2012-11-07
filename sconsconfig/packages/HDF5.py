@@ -81,6 +81,6 @@ int main(int argc, char* argv[]) {
 
         res = super(HDF5, self).check(ctx)
 
-        self.check_required(res[0])
+        self.check_required(res[0], ctx)
         ctx.Result(res[0])
         return res[0]
