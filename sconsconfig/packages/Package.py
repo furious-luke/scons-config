@@ -117,14 +117,28 @@ class Package(object):
                 cur_extra_libs = extra_libs
             ctx.Log('Found options:\n')
             if inc_dirs:
+                kwargs['inc_dirs'] = inc_dirs
                 ctx.Log('  %s = %s\n'%(upp + '_INC_DIR', str(inc_dirs)))
             if lib_dirs:
+                kwargs['lib_dirs'] = lib_dirs
                 ctx.Log('  %s = %s\n'%(upp + '_LIB_DIR', str(lib_dirs)))
-            if cur_libs:
+            if self.have_option(env, upp + '_LIBS'):
+                kwargs['libs'] = cur_libs
+                kwargs['extra_libs'] = []
                 ctx.Log('  %s = %s\n'%(upp + '_LIBS', str([l.path for l in cur_libs])))
 
-            res = self.try_location(ctx, '', **kwargs)
+            res = (True, 0)
+            if inc_dirs:
+                if not self.try_headers(ctx, inc_dirs):
+                    res = (False, 0)
+            bkp = env_setup(ctx.env,
+                            CPPPATH=ctx.env.get('CPPPATH', []) + inc_dirs,
+                            LIBPATH=ctx.env.get('LIBPATH', []) + lib_dirs,
+                            RPATH=ctx.env.get('RPATH', []) + lib_dirs)
+            if res[0]:
+                res = self.try_libs(ctx, libs, **kwargs)
             if not res[0]:
+                env_restore(ctx.env, bkp)
                 self._msg = '\n\nUnable to find a valid %s installation using:\n'%name
                 if self.have_option(env, upp + '_INC_DIR'):
                     self._msg += '  Header directories: %s\n'%str(inc_dirs)
@@ -481,8 +495,27 @@ class Package(object):
             env_restore(ctx.env, l_bkp)
         return res
 
+    def try_headers(self, ctx, inc_dirs, **kwargs):
+        ctx.Log('Trying to find headers in %s\n'%repr(inc_dirs))
+        found_headers = True
+        for hdr in self.headers:
+            found = False
+            for path in inc_dirs:
+                hdr_path = os.path.join(path, hdr)
+                ctx.Log('  ' + hdr_path + ' ... ')
+                if os.path.exists(hdr_path):
+                    ctx.Log('yes.\n')
+                    found = True
+                    break
+                ctx.Log('no.\n')
+            if not found:
+                ctx.Log('Failed to find ' + hdr + '\n')
+                found_headers = False
+                break
+        return found_headers
+
     def try_location(self, ctx, base, **kwargs):
-        ctx.Log('Checking for %s in %s.'%(self.name, base))
+        ctx.Log('Checking for %s in %s.\n'%(self.name, base))
         loc_callback = kwargs.get('loc_callback', None)
         libs = copy.deepcopy(conv.to_iter(self.libs))
         extra_libs = copy.deepcopy(conv.to_iter(self.extra_libs))
@@ -515,18 +548,7 @@ class Package(object):
             ctx.Log('Trying library dirs: ' + str(lib_sub_dirs) + '\n')
 
             # Before continuing, try and find all of the sample headers.
-            found_headers = True
-            for hdr in self.headers:
-                found = False
-                for path in inc_sub_dirs:
-                    if os.path.exists(os.path.join(path, hdr)):
-                        found = True
-                        break
-                if not found:
-                    ctx.Log('Failed to find ' + hdr + '\n')
-                    found_headers = False
-                    break
-            if not found_headers:
+            if not self.try_headers(ctx, inc_sub_dirs, **kwargs):
                 continue
 
             bkp = env_setup(ctx.env,
