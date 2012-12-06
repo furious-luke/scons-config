@@ -1,3 +1,4 @@
+from clock import clock
 from MPI import MPI
 from GSL import GSL
 from HDF5 import HDF5
@@ -11,6 +12,7 @@ from libhpc import libhpc
 from SOCI import SOCI
 from sqlite3 import sqlite3
 from rapidxml import rapidxml
+from pugixml import pugixml
 from re2 import re2
 from libusb import libusb
 from alsa import alsa
