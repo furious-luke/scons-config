@@ -9,7 +9,7 @@ class pugixml(Package):
 
     def __init__(self, **kwargs):
         defaults = {
-            'download_url': 'http://downloads.sourceforge.net/project/pugixml/pugixml/pugixml%201.13/pugixml-1.13.zip'
+            'download_url': 'http://pugixml.googlecode.com/files/pugixml-1.2.tar.gz'
         }
         defaults.update(kwargs)
         super(pugixml, self).__init__(**defaults)
@@ -28,7 +28,9 @@ int main(int argc, char* argv[]) {
             (make_dir, '${PREFIX}'),
             (make_dir, '${PREFIX}/include'),
             (make_dir, '${PREFIX}/lib'),
-            'cp pugixml.hpp pugiconfig.hpp ${PREFIX}/include',
+            'cmake scripts',
+            'make',
+            'cp src/pugixml.hpp src/pugiconfig.hpp ${PREFIX}/include',
             'cp libpugixml.a ${PREFIX}/lib',
         ])
 
