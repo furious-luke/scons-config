@@ -32,7 +32,6 @@ def env_setup(env, **kw):
 #  @param[in] bkp A dictionary of backed up key/values returned by env_backup.
 def env_restore(env, bkp):
     '''
-    
     '''
     for n, v in bkp.iteritems():
         if v is None:
@@ -60,6 +59,7 @@ class Package(object):
         self.sub_dirs = self.DEFAULT_SUB_DIRS
         self.check_text = ''
         self.options = []
+        self.one_shot_options = []
         self.test_names = ['Check' + self.name]
         self.custom_tests = {'Check' + self.name: self.check}
         self.auto_add_libs=True
@@ -235,6 +235,8 @@ class Package(object):
         vars.Add(upp + '_LIBS', help='%s libraries.'%name)
         if self.download_url:
             vars.Add(BoolVariable(upp + '_DOWNLOAD', help='Download and use a local copy of %s.'%name, default=False))
+            vars.Add(BoolVariable(upp + '_REDOWNLOAD', help='Force update of previously downloaded copy of %s.'%name, default=False))
+            self.one_shot_options.append(upp + '_REDOWNLOAD')
         self.options.extend([upp + '_DIR', upp + '_INC_DIR', upp + '_LIB_DIR', upp + '_LIBS', upp + '_DOWNLOAD'])
 
     ## Set the build handler for an architecture and operating system. Pass in None to the handler
@@ -263,6 +265,10 @@ class Package(object):
     def auto(self, ctx):
         sys.stdout.write('\n')
 
+        # Are we forcing this?
+        upp = self.name.upper()
+        force = self.have_option(ctx.env, upp + '_REDOWNLOAD')
+
         # Create the source directory if it does not already exist.
         src_dir = os.path.join('external_packages', 'src')
         if not os.path.exists(src_dir):
@@ -280,13 +286,13 @@ class Package(object):
         os.chdir(src_dir)
 
         # Download if the file is not already available.
-        if not os.path.exists(filename):
+        if not os.path.exists(filename) or force:
             if not self.auto_download(ctx, filename):
                 os.chdir(old_dir)
                 return (0, '')
 
         # Unpack if there is not already a build directory by the same name.
-        if not os.path.exists(build_dir):
+        if not os.path.exists(build_dir) or force:
             if not self.auto_unpack(ctx, filename, build_dir):
                 os.chdir(old_dir)
                 return (0, '')
@@ -299,7 +305,7 @@ class Package(object):
             os.chdir(entries[0])
 
         # Build the package.
-        if not os.path.exists('scons_build_success'):
+        if not os.path.exists('scons_build_success') or force:
             if not self.auto_build(ctx, dst_dir):
                 os.chdir(old_dir)
                 return (0, '')

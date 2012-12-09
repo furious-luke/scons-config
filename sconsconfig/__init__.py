@@ -28,11 +28,24 @@ def check(sconf):
 
 def configure(env, vars):
 
+    # Before I save the issued options, I need to strip out one-shot options
+    # so they don't get repeated later.
+    bkp = {}
+    for pkg in enabled_packages:
+        for opt_name in pkg.one_shot_options:
+            bkp[opt_name] = env[opt_name]
+            del env[opt_name]
+
     # Save the configuration options here, but not again. This is because certain
     # options will set other options in the background, and we don't want to mistakenly
     # think they have been set by the user.
     vars.Save('config.py', env)
 
+    # Restore any one-shot options we stripped out earlier.
+    for k,v in bkp.iteritems():
+        env[k] = v
+
+    # Perform the configuration.
     sconf = env.Configure(custom_tests=custom_tests)
     check(sconf)
     sconf.Finish()
