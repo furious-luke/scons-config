@@ -28,10 +28,10 @@ int main(int argc, char* argv[]) {
             (make_dir, '${PREFIX}'),
             (make_dir, '${PREFIX}/include'),
             (make_dir, '${PREFIX}/lib'),
-            'cmake scripts',
+            'cmake scripts -DBUILD_SHARED_LIBS=yes',
             'make',
             'cp src/pugixml.hpp src/pugiconfig.hpp ${PREFIX}/include',
-            'cp libpugixml.a ${PREFIX}/lib',
+            'cp libpugixml.so ${PREFIX}/lib',
         ])
 
     def check(self, ctx):
