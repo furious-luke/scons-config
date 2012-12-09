@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
             'cmake scripts -DBUILD_SHARED_LIBS=yes',
             'make',
             'cp src/pugixml.hpp src/pugiconfig.hpp ${PREFIX}/include',
-            'cp libpugixml.so ${PREFIX}/lib',
+            'cp libpugixml.so.1.2 ${PREFIX}/lib/libpugixml.so',
         ])
 
     def check(self, ctx):
