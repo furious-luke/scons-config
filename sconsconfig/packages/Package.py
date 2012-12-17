@@ -151,7 +151,7 @@ class Package(object):
                 # env.Exit(1)
 
         # Check if the user requested to download this package.
-        elif self.have_any_options(env, upp + '_DOWNLOAD', 'DOWNLOAD_ALL'):
+        elif self.have_any_options(env, upp + '_DOWNLOAD', 'DOWNLOAD_ALL') and self.download_url:
 
             # Perform the auto-management of this package.
             res = self.auto(ctx)
