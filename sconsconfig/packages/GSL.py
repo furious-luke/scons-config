@@ -5,7 +5,11 @@ from Package import Package
 class GSL(Package):
 
     def __init__(self, **kwargs):
-        super(GSL, self).__init__(**kwargs)
+        defaults = {
+            'download_url': 'http://gnu.mirror.uber.com.au/gsl/gsl-1.15.tar.gz',
+        }
+        defaults.update(kwargs)
+        super(GSL, self).__init__(**defaults)
         self.libs=[
             ['gsl', 'gslcblas'],
             ['gsl'],
@@ -19,6 +23,13 @@ int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
 '''
+
+        # Setup the build handler. I'm going to assume this will work for all architectures.
+        self.set_build_handler([
+            './configure --prefix=${PREFIX}',
+            'make',
+            'make install'
+        ])
 
     def check(self, ctx):
         env = ctx.env
