@@ -460,9 +460,9 @@ class Package(object):
 
         # Prepend or append?
         if defaults['prepend']:
-            libs = defaults['libraries'] + env.get('LIBS', [])
+            libs = defaults['libraries'] + conv.to_iter(env.get('LIBS', []))
         else:
-            libs = env.get('LIBS', []) + defaults['libraries']
+            libs = conv.to_iter(env.get('LIBS', [])) + defaults['libraries']
 
         return env_setup(env, LIBS=libs)
 
