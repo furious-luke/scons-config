@@ -40,6 +40,7 @@ int main(int argc, char* argv[]) {
         ctx.Message('Checking for pugixml ... ')
         self.check_options(env)
 
+        self.need_cmake(env)
         res = super(pugixml, self).check(ctx)
 
         self.check_required(res[0], ctx)

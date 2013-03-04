@@ -613,3 +613,20 @@ class Package(object):
             print '\n'
             print 'Cannot specify to download %s and also give a system location.'%self.name
             env.Exit(1)
+
+    def need_cmake(self, env):
+        if not self.have_cmake():
+            print '\n'
+            print '%s requires CMake to be installed to autobuild.'%self.name
+            print
+            env.Exit(1)
+
+    def have_cmake(self):
+        if getattr(self, '_cmake', False):
+            return self._cmake
+        try:
+            subprocess.check_call('cmake', stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self._cmake = True
+        except:
+            self._cmake = False
+        return self._cmake
