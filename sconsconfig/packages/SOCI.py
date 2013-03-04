@@ -43,6 +43,12 @@ int main(int argc, char* argv[]) {
         #     cmake += ' -DBOOST_DIR:PATH=' + boost.base_dir
         cmake += ' -DWITH_BOOST=off'
 
+        # Turn on release mode to prevent a very odd bug
+        # in SOCI that produces an assertion whenever you
+        # try to read data from PostgreSQL into a vector
+        # larger than numeric_limits<unsigned short>::max().
+        cmake += ' -DCMAKE_BUILD_TYPE:STRING=release'
+
         # Check for sqlite3, like boost.
         sqlite = config.package(config.packages.sqlite3)
         if sqlite and sqlite.found and sqlite.base_dir:

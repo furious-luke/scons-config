@@ -320,6 +320,10 @@ class Package(object):
     def auto_download(self, ctx, filename):
         sys.stdout.write('  Downloading ... ')
         sys.stdout.flush()
+
+        if os.path.exists(filename):
+            os.remove(filename)
+
         ctx.Log("Downloading file from " + self.download_url + "\n")
         try:
             import urllib
@@ -334,9 +338,12 @@ class Package(object):
     def auto_unpack(self, ctx, filename, build_dir):
         sys.stdout.write('  Extracting ... ')
         sys.stdout.flush()
-        ctx.Log("Extracting contents of " + filename + "\n")
+
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
 
         # TODO: DRY
+        ctx.Log("Extracting contents of " + filename + "\n")
         if os.path.splitext(filename)[1] == '.zip':
             ctx.Log("Using zip\n")
             try:
@@ -384,6 +391,10 @@ class Package(object):
         import os
         if os.path.exists('scons_build_success'):
             os.remove('scons_build_success')
+
+        # Remove the installation directory.
+        if os.path.exists(dst_dir):
+            shutil.rmtree(dst_dir)
 
         # Hunt down the correct build handler.
         handler = self.get_build_handler()
@@ -460,9 +471,9 @@ class Package(object):
 
         # Prepend or append?
         if defaults['prepend']:
-            libs = defaults['libraries'] + env.get('LIBS', [])
+            libs = defaults['libraries'] + conv.to_iter(env.get('LIBS', []))
         else:
-            libs = env.get('LIBS', []) + defaults['libraries']
+            libs = conv.to_iter(env.get('LIBS', [])) + defaults['libraries']
 
         return env_setup(env, LIBS=libs)
 
