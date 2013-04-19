@@ -22,3 +22,4 @@ from Eigen import Eigen
 from SkyMaker import SkyMaker
 from MySQL import MySQL
 from PostgreSQL import PostgreSQL
+from cfitsio import cfitsio
