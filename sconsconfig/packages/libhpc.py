@@ -40,6 +40,10 @@ int main(int argc, char* argv[]) {
 }
 '''
 
+        # MPI on a cluster usually won't run properly, so don't
+        # try to.
+        self.run = False
+
     def check(self, ctx):
         env = ctx.env
         ctx.Message('Checking for libhpc ... ')
