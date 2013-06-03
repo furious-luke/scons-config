@@ -5,7 +5,7 @@ class boost(Package):
 
     def __init__(self, **kwargs):
         defaults = {
-            'download_url': 'http://downloads.sourceforge.net/project/boost/boost/1.50.0/boost_1_50_0.tar.gz',
+            'download_url': 'http://downloads.sourceforge.net/project/boost/boost/1.53.0/boost_1_53_0.tar.gz',
         }
         defaults.update(kwargs)
         super(boost, self).__init__(**defaults)
