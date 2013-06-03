@@ -19,6 +19,7 @@ class GSL(Package):
 #include <stdlib.h>
 #include <stdio.h>
 #include <gsl/gsl_version.h>
+#include <gsl/gsl_integration.h>
 int main(int argc, char* argv[]) {
    return EXIT_SUCCESS;
 }
