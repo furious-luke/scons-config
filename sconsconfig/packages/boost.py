@@ -14,7 +14,7 @@ class boost(Package):
             ('include', 'lib'),
         ]
         self.headers = ['boost/optional.hpp']
-        self.libs = [['boost_regex', 'boost_iostreams']]
+        self.libs = [['boost_regex', 'boost_iostreams', 'boost_filesystem', 'boost_system']]
         self.check_text = r'''
 #include <stdlib.h>
 #include <stdio.h>
