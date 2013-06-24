@@ -6,7 +6,7 @@ class HDF5(Package):
 
     def __init__(self, **kwargs):
         defaults = {
-            'download_url': 'http://www.hdfgroup.org/ftp/HDF5/current/src/hdf5-1.8.9.tar.gz',
+            'download_url': 'http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8.9/src/hdf5-1.8.9.tar.gz',
         }
         defaults.update(kwargs)
         super(HDF5, self).__init__(**defaults)

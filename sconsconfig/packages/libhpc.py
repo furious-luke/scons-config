@@ -63,6 +63,8 @@ int main(int argc, char* argv[]) {
         pkg = config.package(config.packages.pugixml)
         if pkg and pkg.found and pkg.base_dir:
             cmd += ' PUGIXML_DIR=' + pkg.base_dir
+        if env['WITH_OPENMP']:
+            cmd += ' WITH_OPENMP=yes'
         cmd += ' install'
 
         # Setup the build handler. I'm going to assume this will work for all architectures.
