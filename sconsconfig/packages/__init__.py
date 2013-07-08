@@ -24,3 +24,4 @@ from MySQL import MySQL
 from PostgreSQL import PostgreSQL
 from cfitsio import cfitsio
 from CUDA import CUDA
+from glut import glut
